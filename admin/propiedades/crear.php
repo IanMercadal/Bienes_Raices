@@ -1,5 +1,11 @@
 <?php
 
+    require '../../includes/funciones.php';
+    $auth = estaAutenticado();
+
+    if(!$auth){
+        header('Location: /');
+    }
     // BBDD
 
     require '../../includes/config/database.php';
@@ -101,7 +107,6 @@
         }
     }
 
-    require '../../includes/funciones.php';
     incluirTemplate('header');
 ?>
     <main class="contenedor seccion">
