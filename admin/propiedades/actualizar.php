@@ -19,10 +19,6 @@
     $resultado = mysqli_query($db,$consulta);
     $propiedad = mysqli_fetch_assoc($resultado);
 
-    echo "<pre>" ;
-    var_dump($propiedad);
-    echo "</pre>";
-
     // Consultar para obtener vendedores las
     $consulta = "SELECT * FROM vendedores";
     $resultado = mysqli_query($db,$consulta);
@@ -40,10 +36,6 @@
     $imagenPropiedad = $propiedad['imagen'];
 
     if($_SERVER['REQUEST_METHOD'] === 'POST'){
-
-        echo "<pre>";
-        var_dump($_POST);
-        echo "</pre>";
 
         $titulo = mysqli_real_escape_string($db, $_POST['titulo']);
         $precio = mysqli_real_escape_string($db,$_POST['precio']);
@@ -83,10 +75,7 @@
         if($imagen['size'] > $medida){
             $errores[] = 'La imagen es muy pesada';
         }
-        // echo "<pre>";  
-        // var_dump($errores);
-        // echo "</pre>";
-
+        
         // Revisar que el array de errores está vacío
 
         if(empty($errores)){
@@ -119,8 +108,6 @@
             $query = "UPDATE propiedades SET titulo='${titulo}', precio='{$precio}',imagen='{$nombreImagen}' ,descripcion='{$descripcion}',
             habitaciones = '{$habitaciones}', wc='{$wc}', estacionamiento='{$estacionamiento}', vendedorId = '{$vendedorId}'
             WHERE id = ${id}";
-
-            echo $query;
     
             $resultado = mysqli_query($db, $query);
     
