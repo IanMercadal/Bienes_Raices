@@ -13,6 +13,16 @@
     require '../../includes/config/database.php';
     $db = conectarDB();
 
+    // Obtener los datos de la propiedad
+
+    $consulta = "SELECT * FROM propiedades WHERE id = ${id}";
+    $resultado = mysqli_query($db,$consulta);
+    $propiedad = mysqli_fetch_assoc($resultado);
+
+    echo "<pre>" ;
+    var_dump($propiedad);
+    echo "</pre>";
+
     // Consultar para obtener vendedores las
     $consulta = "SELECT * FROM vendedores";
     $resultado = mysqli_query($db,$consulta);
@@ -20,15 +30,20 @@
     // Array con mensaje de errores
     $errores = [];
 
-    $titulo = '';
-    $precio = '';
-    $descripcion = '';
-    $habitaciones = '';
-    $wc = '';
-    $estacionamiento = '';
-    $vendedorId = '';
+    $titulo = $propiedad['titulo'];
+    $precio = $propiedad['precio'];
+    $descripcion = $propiedad['descripcion'];
+    $habitaciones = $propiedad['habitaciones'];
+    $wc = $propiedad['wc'];
+    $estacionamiento = $propiedad['estacionamiento'];
+    $vendedorId = $propiedad['vendedorId'];
+    $imagenPropiedad = $propiedad['imagen'];
 
     if($_SERVER['REQUEST_METHOD'] === 'POST'){
+
+        echo "<pre>";
+        var_dump($_POST);
+        echo "</pre>";
 
         $titulo = mysqli_real_escape_string($db, $_POST['titulo']);
         $precio = mysqli_real_escape_string($db,$_POST['precio']);
@@ -63,13 +78,8 @@
         if(!$vendedorId){
             $errores[] = "Elige un vendedor";
         }
-        if(!$imagen['name'] || $imagen['error']){
-            $errores[] = 'La imagen es Obligatoria';
-        }
-
         // Valida por tamaño (1 MB máximo)
         $medida = 1000 * 1000;
-
         if($imagen['size'] > $medida){
             $errores[] = 'La imagen es muy pesada';
         }
@@ -90,21 +100,33 @@
                 mkdir($carpetaImagenes);
             }
 
-            // Generar nombre único
-            $nombreImagen = md5(uniqid(rand(),true)) . ".jpg";
-            
-            // Subir la imagen
-            move_uploaded_file($imagen['tmp_name'], $carpetaImagenes . $nombreImagen );
+            $nombreImagen = '';
 
+            if($imagen['name']){
+                // Eliminar la imagen previa
+                unlink($carpetaImagenes . $propiedad['imagen']);
+
+                // Generar nombre único
+                $nombreImagen = md5(uniqid(rand(),true)) . ".jpg";
+            
+                // Subir la imagen
+                move_uploaded_file($imagen['tmp_name'], $carpetaImagenes . $nombreImagen );
+            }else{
+                $nombreImagen =  $propiedad['imagen'];
+            }
+            
             // Insertar en la base de datos
-            $query = "INSERT INTO propiedades (titulo, precio, imagen, descripcion,habitaciones, wc, estacionamiento, creado,
-            vendedorId) VALUES ('$titulo', '$precio', '$nombreImagen' ,'$descripcion','$habitaciones', '$wc', '$estacionamiento', '$creado','$vendedorId')";
+            $query = "UPDATE propiedades SET titulo='${titulo}', precio='{$precio}',imagen='{$nombreImagen}' ,descripcion='{$descripcion}',
+            habitaciones = '{$habitaciones}', wc='{$wc}', estacionamiento='{$estacionamiento}', vendedorId = '{$vendedorId}'
+            WHERE id = ${id}";
+
+            echo $query;
     
             $resultado = mysqli_query($db, $query);
     
             if($resultado){
                 // Redireccionar al user con queryString
-                header('Location: /admin?resultado=1');
+                header('Location: /admin?resultado=2');
             }
         }
     }
@@ -124,7 +146,7 @@
         </div>
         <?php endforeach; ?>
 
-        <form class="formulario" method="POST" action="/admin/propiedades/crear.php" enctype="multipart/form-data">
+        <form class="formulario" method="POST" enctype="multipart/form-data">
             <fieldset>
                 <legend>Información General</legend> 
 
@@ -136,6 +158,8 @@
 
                 <label for="imagen">Imagen:</label>
                 <input type="file" id="imagen" accept="image/jpeg, image/png" name="imagen"></input>
+
+                <img src="/imagenes/<?php echo $imagenPropiedad; ?>" class="imagen-small">
 
                 <label for="descripcion">Descripción:</label>
                 <textarea id="descripcion" name="descripcion">"<?php echo $descripcion; ?>"</textarea>
