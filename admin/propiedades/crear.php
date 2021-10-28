@@ -1,14 +1,12 @@
 <?php
 
-    require '../../includes/funciones.php';
-    $auth = estaAutenticado();
+    require '../../includes/app.php';
 
-    if(!$auth){
-        header('Location: /');
-    }
+    use App\Propiedad;
+
+    estaAutenticado();
+
     // BBDD
-
-    require '../../includes/config/database.php';
     $db = conectarDB();
 
     // Consultar para obtener vendedores las
