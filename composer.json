@@ -1,0 +1,17 @@
+{
+    "name": "ian/bienes_raices",
+    "description": "Creando un Proyecto POO",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\" : "./classes"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ian Mercadal",
+            "email": "imercadal@cifpfbmoll.eu"
+        }
+    ],
+    "require": {}
+}

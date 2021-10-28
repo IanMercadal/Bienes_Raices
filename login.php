@@ -1,6 +1,6 @@
 <?php
 
-require 'includes/config/database.php';
+require 'includes/app.php';
 $db = conectarDB();
     // Autenticar el usuario
 
@@ -45,7 +45,7 @@ $db = conectarDB();
         }
     }
 
-    require 'includes/funciones.php';
+    
     incluirTemplate('header');
 ?>
     <main class="contenedor seccion contenido-centrado">
