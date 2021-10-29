@@ -13,5 +13,7 @@
             "email": "imercadal@cifpfbmoll.eu"
         }
     ],
-    "require": {}
+    "require": {
+        "intervention/image": "^2.7"
+    }
 }

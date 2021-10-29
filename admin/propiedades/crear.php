@@ -1,169 +1,131 @@
 <?php
 
-    require '../../includes/app.php';
+require '../../includes/app.php';
 
-    use App\Propiedad;
+use App\Propiedad;
+use Intervention\Image\ImageManagerStatic as Image;
 
-    estaAutenticado();
+estaAutenticado();
 
-    // BBDD
-    $db = conectarDB();
+$db = conectarDB();
 
-    // Consultar para obtener vendedores las
-    $consulta = "SELECT * FROM vendedores";
-    $resultado = mysqli_query($db,$consulta);
+// Consultar para obtener vendedores las
+$consulta = "SELECT * FROM vendedores";
+$resultado = mysqli_query($db, $consulta);
 
-    // Array con mensaje de errores
-    $errores = [];
+// Array con mensaje de errores
+$errores = Propiedad::getErrores();
 
-    $titulo = '';
-    $precio = '';
-    $descripcion = '';
-    $habitaciones = '';
-    $wc = '';
-    $estacionamiento = '';
-    $vendedorId = '';
+$titulo = '';
+$precio = '';
+$descripcion = '';
+$habitaciones = '';
+$wc = '';
+$estacionamiento = '';
+$vendedorId = '';
 
-    if($_SERVER['REQUEST_METHOD'] === 'POST'){
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-        $titulo = mysqli_real_escape_string($db, $_POST['titulo']);
-        $precio = mysqli_real_escape_string($db,$_POST['precio']);
-        $descripcion = mysqli_real_escape_string($db,$_POST['descripcion']);
-        $habitaciones = mysqli_real_escape_string($db,$_POST['habitaciones']);
-        $wc = mysqli_real_escape_string($db,$_POST['wc']);
-        $estacionamiento = mysqli_real_escape_string($db,$_POST['estacionamiento']);
-        $vendedorId = mysqli_real_escape_string($db,$_POST['vendedorId']);
-        $creado = date('Y/m/d');
+    /* Crea una nueva instancia */
+    $propiedad = new Propiedad($_POST);
 
-        // Asignar files hacia una variable file
-        $imagen = $_FILES['imagen'];
+    // Subir archivos 
 
-        if(!$titulo){
-            $errores[] = "Debes añadir un titulo";
-        }
-        if(!$precio){
-            $errores[] = "El precio es obligatorio";
-        }
-        if(strlen($descripcion) < 50){
-            $errores[] = "La descripción debe tener al menos 50 caracteres";
-        }
-        if(!$habitaciones){
-            $errores[] = "El número de habitaciones es obligatorio";
-        }
-        if(!$wc){
-            $errores[] = "El número de baños es obligatorio";
-        }
-        if(!$estacionamiento){
-            $errores[] = "El número de Estacionamientos es obligatorio";
-        }
-        if(!$vendedorId){
-            $errores[] = "Elige un vendedor";
-        }
-        if(!$imagen['name'] || $imagen['error']){
-            $errores[] = 'La imagen es Obligatoria';
+
+    // Generar nombre único
+    $nombreImagen = md5(uniqid(rand(), true)) . ".jpg";
+
+    // Setear la imagen
+    // Realiza un resize a la imagen con Intervention
+    if($_FILES['imagen']['tmp_name']){
+        $image = Image::make($_FILES['imagen']['tmp_name'])->fit(800, 600);
+        $propiedad->setImagen($nombreImagen);
+    }
+    $errores = $propiedad->validar();
+
+    if (empty($errores)) {
+
+        // Crear la carpeta para subir imagenes 
+        if(!is_dir(CARPETA_IMAGENES)){
+            mkdir(CARPETA_IMAGENES);
         }
 
-        // Valida por tamaño (1 MB máximo)
-        $medida = 1000 * 1000;
+        // Guara la imagen en el servidor
+        $image->save(CARPETA_IMAGENES . $nombreImagen);
 
-        if($imagen['size'] > $medida){
-            $errores[] = 'La imagen es muy pesada';
-        }
-        // echo "<pre>";  
-        // var_dump($errores);
-        // echo "</pre>";
+        // Guardamos la imagen en el servidor
+        $image->save($carpetaImagenes . $nombreImagen);
 
-        // Revisar que el array de errores está vacío
+        // Guarda en la BBDD
+        $resultado = $propiedad->guardar();
 
-        if(empty($errores)){
-
-            // Subir archivos 
-
-            // Crear carpeta
-            $carpetaImagenes = '../../imagenes/';
-
-            if(!is_dir($carpetaImagenes)){
-                mkdir($carpetaImagenes);
-            }
-
-            // Generar nombre único
-            $nombreImagen = md5(uniqid(rand(),true)) . ".jpg";
-            
-            // Subir la imagen
-            move_uploaded_file($imagen['tmp_name'], $carpetaImagenes . $nombreImagen );
-
-            // Insertar en la base de datos
-            $query = "INSERT INTO propiedades (titulo, precio, imagen, descripcion,habitaciones, wc, estacionamiento, creado,
-            vendedorId) VALUES ('$titulo', '$precio', '$nombreImagen' ,'$descripcion','$habitaciones', '$wc', '$estacionamiento', '$creado','$vendedorId')";
-    
-            $resultado = mysqli_query($db, $query);
-    
-            if($resultado){
-                // Redireccionar al user con queryString
-                header('Location: /admin?resultado=1');
-            }
+        // Mensaje de exito o error
+        if ($resultado) {
+            // Redireccionar al user con queryString
+            header('Location: /admin?resultado=1');
         }
     }
+}
 
-    incluirTemplate('header');
+incluirTemplate('header');
 ?>
-    <main class="contenedor seccion">
-        <h1>Crear</h1>
+<main class="contenedor seccion">
+    <h1>Crear</h1>
 
-        <a href="/admin" class="boton boton-verde">Volver</a>
+    <a href="/admin" class="boton boton-verde">Volver</a>
 
-        <?php foreach ($errores as $error): ?>
+    <?php foreach ($errores as $error) : ?>
         <div class="alerta error">
             <?php echo $error; ?>
 
         </div>
-        <?php endforeach; ?>
+    <?php endforeach; ?>
 
-        <form class="formulario" method="POST" action="/admin/propiedades/crear.php" enctype="multipart/form-data">
-            <fieldset>
-                <legend>Información General</legend> 
+    <form class="formulario" method="POST" action="/admin/propiedades/crear.php" enctype="multipart/form-data">
+        <fieldset>
+            <legend>Información General</legend>
 
-                <label for="titulo">Título:</label>
-                <input type="text" id="titulo" name="titulo" placeholder="Título Propiedad" value="<?php echo $titulo; ?>"></input>
+            <label for="titulo">Título:</label>
+            <input type="text" id="titulo" name="titulo" placeholder="Título Propiedad" value="<?php echo $titulo; ?>"></input>
 
-                <label for="precio">Precio:</label>
-                <input type="number" id="precio" name="precio" placeholder="Precio Propiedad" value="<?php echo $precio; ?>"></input>
+            <label for="precio">Precio:</label>
+            <input type="number" id="precio" name="precio" placeholder="Precio Propiedad" value="<?php echo $precio; ?>"></input>
 
-                <label for="imagen">Imagen:</label>
-                <input type="file" id="imagen" accept="image/jpeg, image/png" name="imagen"></input>
+            <label for="imagen">Imagen:</label>
+            <input type="file" id="imagen" accept="image/jpeg, image/png" name="imagen"></input>
 
-                <label for="descripcion">Descripción:</label>
-                <textarea id="descripcion" name="descripcion">"<?php echo $descripcion; ?>"</textarea>
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion">"<?php echo $descripcion; ?>"</textarea>
 
-                
-            </fieldset>
 
-            <fieldset>
-                <legend>Información Propiedad</legend>
-                <label for="habitaciones">Habitaciones:</label>
-                <input type="number" id="habitaciones" name="habitaciones" placeholder="Ej: 3" min="1" max="9" value="<?php echo $habitaciones; ?>">
+        </fieldset>
 
-                <label for="wc">Baños:</label>
-                <input type="number" id="wc" name="wc" placeholder="Ej: 3" min="1" max="9" value="<?php echo $wc; ?>">
-    
-                <label for="estacionamiento">Estacionamientos:</label>
-                <input type="number" id="estacionamiento" name="estacionamiento" placeholder="Ej: 3" min="1" max="9" value="<?php echo $estacionamiento; ?>">
-            </fieldset>
+        <fieldset>
+            <legend>Información Propiedad</legend>
+            <label for="habitaciones">Habitaciones:</label>
+            <input type="number" id="habitaciones" name="habitaciones" placeholder="Ej: 3" min="1" max="9" value="<?php echo $habitaciones; ?>">
 
-            <fieldset>
-                <legend>Vendedor</legend>
+            <label for="wc">Baños:</label>
+            <input type="number" id="wc" name="wc" placeholder="Ej: 3" min="1" max="9" value="<?php echo $wc; ?>">
 
-                <select name="vendedorId">
-                    <option value="">--Seleccione--</option>
-                    <?php while ($vendedor = mysqli_fetch_assoc($resultado) ) : ?>
-                            <option <?php echo $vendedorId === $vendedor['id'] ? 'selected' : '';?>   value="<?php echo $vendedor['id']; ?>">
-                            <?php echo $vendedor['nombre'] . " " . $vendedor['apellidos']; ?> </option>
-                    <?php endwhile; ?>
-                </select>
-            </fieldset>
-            <input type="submit" value="Crear Propiedad" class="boton boton-verde">
-        </form>
-    </main> 
+            <label for="estacionamiento">Estacionamientos:</label>
+            <input type="number" id="estacionamiento" name="estacionamiento" placeholder="Ej: 3" min="1" max="9" value="<?php echo $estacionamiento; ?>">
+        </fieldset>
+
+        <fieldset>
+            <legend>Vendedor</legend>
+
+            <select name="vendedorId">
+                <option value="">--Seleccione--</option>
+                <?php while ($vendedor = mysqli_fetch_assoc($resultado)) : ?>
+                    <option <?php echo $vendedorId === $vendedor['id'] ? 'selected' : ''; ?> value="<?php echo $vendedor['id']; ?>">
+                        <?php echo $vendedor['nombre'] . " " . $vendedor['apellidos']; ?> </option>
+                <?php endwhile; ?>
+            </select>
+        </fieldset>
+        <input type="submit" value="Crear Propiedad" class="boton boton-verde">
+    </form>
+</main>
 <?php
-    incluirTemplate('footer');
+incluirTemplate('footer');
 ?>
