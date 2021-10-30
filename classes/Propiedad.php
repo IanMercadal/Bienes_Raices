@@ -40,7 +40,7 @@ class Propiedad{
         $this->wc = $args['wc'] ?? '';
         $this->estacionamiento = $args['estacionamiento'] ?? '';
         $this->creado= date('Y/m/d');
-        $this->vendedorId= $args['vendedorId'] ?? '';
+        $this->vendedorId= $args['vendedorId'] ?? 1;
     }
     public function guardar(){
 
@@ -116,6 +116,41 @@ class Propiedad{
             self::$errores[] = 'La imagen es Obligatoria';
         }
         return self::$errores;
+    }
+
+    // Lista todas las propiedades
+    public static function all(){
+        $query = "SELECT * FROM propiedades";
+
+        $resultado = self::consutarSQL($query);
+        return $resultado;
+    }
+    public static function consutarSQL($query){
+        // Consultar la BBDD 
+        $resultado = self::$db->query($query);
+
+        // Iterar los resultados
+        $array = [];
+        while($registro = $resultado->fetch_assoc()){
+            $array[] = self::crearObjeto($registro);
+        }
+
+        // Liberar memoria
+        $resultado->free(); // Esto ayudaría al servidor
+
+        // Retornar los resultado
+        return $array;
+
+    }
+    protected static function crearObjeto($registro){
+        $objeto = new self;
+
+        foreach($registro as $key => $value){
+            if(property_exists($objeto, $key)){ // Se realiza un mapeo de datos de la BBDD y se almacenan en memoria
+                $objeto->$key = $value;
+            }
+        }
+        return $objeto;
     }
 }
 
